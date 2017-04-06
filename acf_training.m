@@ -10,5 +10,5 @@ trainingData = data(1:600, :);
 validationData = data(751:end, :);
 testData = data(601:750, :);
 
-detector = trainACFObjectDetector(data, 'NumStages', 10);
-ap = detector_accuracy(detector, validationData);
+acfDetector = trainACFObjectDetector(data, 'NumStages', 10);
+ap = detector_accuracy(acfDetector, validationData);

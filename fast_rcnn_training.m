@@ -30,13 +30,34 @@ options_alex = trainingOptions('sgdm', ...
     
         
 %Train Fast-RCNN detector
-frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options_alex, ...
-    'NegativeOverlapRange', [0 0.1], ...
-    'PositiveOverlapRange', [0.5 1], ...
-    'NumStrongestRegions', Inf);
+% frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options_alex, ...
+%     'NegativeOverlapRange', [0 0.1], ...
+%     'PositiveOverlapRange', [0.5 1], ...
+%     'NumStrongestRegions', Inf);
 
 % frcnn = trainFastRCNNObjectDetector(data, cifar10Net , options, ...
 %     'NegativeOverlapRange', [0 0.1], ...
 %     'PositiveOverlapRange', [0.7 1], ...
 %     'SmallestImageDimension', 600);
+load('frcnn.mat')
 
+numImages = height(testData);
+results(numImages) = struct('bbox',[],'scores',[], 'labels', []);
+for i=1:size(testData, 1)
+    %Detect and store bboxes for all images
+    img = imread(testData.fileNames{i});
+    [bboxes,scores, labels] = detect(frcnn, img);
+    results(i).bbox = bboxes;
+    results(i).scores = scores;
+    results(i).labels = labels;
+end
+
+detectorData = struct2table(results); 
+%Evaluate detector
+[ap,recall,precision] = evaluateDetectionPrecision(detectorData,testData(:, 2:end));
+figure
+plot(recall,precision)
+xlabel('recall')
+ylabel('precision')
+grid on
+title(sprintf('Average Precision = %.1f',ap))
