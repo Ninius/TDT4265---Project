@@ -1,42 +1,105 @@
 %% Setup variables
 numClasses = 43;
-folderpath = 'GTSRB\Final_Training\Images'; %Path to training images
+%Path to training images
+folderpath = 'GTSRB\Final_Training\Images'; 
 fullpath = fullfile(pwd, folderpath);
-load('rcnnStopSigns.mat', 'cifar10Net');         %Load pretrained net 1
-cifar10Net = cifar10Net.Layers(1:end-3);         %Remove final classification layers
-alexNet = alexnet               %Load pretrained alexnet
-alexNet = alexNet.Layers(1:end-3);               %Remove final classification layers and input layer.
+%Load pretrained net #1, 
+load('rcnnStopSigns.mat', 'cifar10Net');   %Structure: https://se.mathworks.com/help/vision/examples/object-detection-using-deep-learning.html      
+%Remove final classification layers
+cifar10Net = cifar10Net.Layers(1:end-3);   
 
-finalLayers = [fullyConnectedLayer(numClasses,'WeightLearnRateFactor',20,'BiasLearnRateFactor',20) softmaxLayer classificationLayer]; %New classification layers
-alexNet = [alexNet; finalLayers'];  %Add final classificatrion layer
+%Load pretrained alexnet
+alexNet = alexnet;    
+%Remove final classification layers 
+alexNet = alexNet.Layers(1:end-3);   
+
+%New classification layers
+finalLayers = [fullyConnectedLayer(numClasses,'WeightLearnRateFactor',20,'BiasLearnRateFactor',20) softmaxLayer classificationLayer]; 
+%Add final classificatrion layers
+alexNet = [alexNet; finalLayers'];  
 cifar10Net = [cifar10Net; finalLayers'];
-imds = imageDatastore(fullpath,...
-'IncludeSubfolders',true,'FileExtensions','.ppm','LabelSource','foldernames'); %Creates training data structure, label = (sub)foldername
-[testSet, trainingSet] = splitEachLabel(imds, 0.3, 'randomize');        %Create training/validation data.
-%% Training
-imds.ReadFcn = @(filename)readAndPreprocessImage(filename); %Automatically resize image to correct input size when read (alexnet)
-dim = [227 277]; %alexnet input size
 
+%Creates training data structure, label = (sub)foldername
+imds = imageDatastore(fullpath,...
+'IncludeSubfolders',true,'FileExtensions','.ppm','LabelSource','foldernames'); 
+%Automatically resize image to correct input size when read (alexnet)
+imds.ReadFcn = @(filename)readAndPreprocessImage(filename); 
+%Create training/test data.
+[testSetAlex, trainingSetAlex] = splitEachLabel(imds, 0.3, 'randomize');
+
+imds.ReadFcn = @(filename)readAndPreprocessImage2(filename); 
+%Create training/test data.
+[testSetCifar, trainingSetCifar] = splitEachLabel(imds, 0.3, 'randomize');
+%% Training
+%Set training options. BatchSize 128 is typically used with alexnet, uses max ~5.6GB VRAM with GPU training
 optionsTransfer = trainingOptions('sgdm', ...
     'MaxEpochs',10, ...
     'InitialLearnRate',0.0001, ...
-    'MiniBatchSize', 128); %Set training options. BatchSize 128 is typically used with alexnet, uses max ~5.6GB VRAM with GPU training
-trainedAlexNet = trainNetwork(trainingSet,alexNet, optionsTransfer);   %Train net
+    'MiniBatchSize', 128, ...
+    'OutputFcn', @plotTrainingAccuracy);
 
+% %Train alexnet
+% tic;
+% trainedAlexNet = trainNetwork(trainingSetAlex,alexNet, optionsTransfer);   %Train net
+% trainingTimeAlex = toc;
 
+%Train cifar10Net
+tic;
+trainedCifar10Net = trainNetwork(trainingSetCifar,cifar10Net, optionsTransfer);
+trainingTimeCifar = toc;
 
+%% Testing
+%Test alexnet
+tic;
+YTest = classify(trainedAlexNet,testSetAlex);
+classificationTimeAlex = toc
+TTest = testSetAlex.Labels;
+%Calculate accuracy
+accuracyAlex = sum(YTest == TTest)/numel(TTest)
 
+%Test Cifar10Net
+tic;
+YTest = classify(trainedCifar10Net,testSetCifar);
+classificationTimeCifar = toc
+%Calculate accuracy
+accuracyCifar = sum(YTest == TTest)/numel(TTest)
 
 
 
 
 
 %% Resize image functions
+%alexnet
 function Iout = readAndPreprocessImage(filename)
         dim = [227 227];
         I = imread(filename);
         % Resize the image as required for the CNN.
         Iout = imresize(I, dim);
+
+end
+%Cifar10Net
+function Iout = readAndPreprocessImage2(filename)
+        dim = [32 32];
+        I = imread(filename);
+        % Resize the image as required for the CNN.
+        Iout = imresize(I, dim);
+
+end
+%% Plot training accuracy
+%Source: https://se.mathworks.com/help/nnet/ref/trainingoptions.html
+function plotTrainingAccuracy(info)
+
+persistent plotObj
+
+if info.State == "start"
+    figure;
+    plotObj = animatedline;
+    xlabel("Iteration")
+    ylabel("Training Accuracy")
+elseif info.State == "iteration"
+    addpoints(plotObj,info.Iteration,info.TrainingAccuracy)
+    drawnow limitrate nocallbacks
+end
 
 end
     

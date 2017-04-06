@@ -5,8 +5,10 @@ GTTable = 'FullIJCNN2013\gt.txt';
 data = readGTData(GTTable);
 %Create complete image file paths
 data.fileNames = fullfile(pwd, data.fileNames);
-trainingData = data(1:600,:);
-testData = data(601:end, :);
+%Split into training, validation and test data
+trainingData = data(1:600, :);
+validationData = data(751:end, :);
+testData = data(601:750, :);
 
 %Load pretrained network 1
 load('rcnnStopSigns.mat', 'cifar10Net');
@@ -23,7 +25,7 @@ options = trainingOptions('sgdm', ...
 options_alex = trainingOptions('sgdm', ...
         'MiniBatchSize', 32, ...
         'InitialLearnRate', 0.0001, ...
-        'MaxEpochs', 500, ...
+        'MaxEpochs', 100, ...
         'Verbose', true);
     
         
