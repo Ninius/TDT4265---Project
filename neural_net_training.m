@@ -44,25 +44,27 @@ optionsTransfer = trainingOptions('sgdm', ...
 % trainingTimeAlex = toc;
 
 %Train cifar10Net
-tic;
-trainedCifar10Net = trainNetwork(trainingSetCifar,cifar10Net, optionsTransfer);
-trainingTimeCifar = toc;
+% tic;
+% trainedCifar10Net = trainNetwork(trainingSetCifar,cifar10Net, optionsTransfer);
+% trainingTimeCifar = toc;
 
 %% Testing
 %Test alexnet
+load('alexnet_trained.mat')
 tic;
-YTest = classify(trainedAlexNet,testSetAlex);
+predictedLabels = classify(trainedAlexNet,testSetAlex);
 classificationTimeAlex = toc
-TTest = testSetAlex.Labels;
+testLabels = testSetAlex.Labels;
 %Calculate accuracy
-accuracyAlex = sum(YTest == TTest)/numel(TTest)
-
+accuracyAlex = sum(predictedLabels == testLabels)/numel(testLabels)
+confMat = confusionmat(testLabels, predictedLabels);
 %Test Cifar10Net
 tic;
-YTest = classify(trainedCifar10Net,testSetCifar);
+predictedLabels = classify(trainedCifar10Net,testSetCifar);
 classificationTimeCifar = toc
 %Calculate accuracy
-accuracyCifar = sum(YTest == TTest)/numel(TTest)
+accuracyCifar = sum(predictedLabels == testLabels)/numel(testLabels)
+
 
 
 

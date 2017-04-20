@@ -6,9 +6,9 @@ data = readGTData(GTTable);
 %Create complete image file paths
 data.fileNames = fullfile(pwd, data.fileNames);
 %Split into training, validation and test data
-trainingData = data(1:600, :);
-validationData = data(751:end, :);
-testData = data(601:750, :);
+trainingData = data(1:750, :);
+testData = data(751:end, :);
+
 
 %Load pretrained network 1
 load('rcnnStopSigns.mat', 'cifar10Net');
@@ -19,30 +19,28 @@ load('alexnet_trained.mat');
 %Approx. values: 120 for cifar10Net, 10 for AlexNet on 8GB VRAM GPU
 options = trainingOptions('sgdm', ...
     'MiniBatchSize', 128, ...
-    'InitialLearnRate', 0.0001, ...
+    'InitialLearnRate', 0.001, ...
     'MaxEpochs', 100);
     
-options_alex = trainingOptions('sgdm', ...
-        'MiniBatchSize', 32, ...
-        'InitialLearnRate', 1e-6, ...
-        'MaxEpochs', 500, ...
-        'Verbose', true);
+options2 = trainingOptions('sgdm', ...
+    'MaxEpochs',20, ...
+    'InitialLearnRate',0.0001, ...
+    'MiniBatchSize', 128, ...
+    'OutputFcn', @plotTrainingAccuracy);
     
         
 %Train Fast-RCNN detector
-% frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options_alex, ...
-%     'NegativeOverlapRange', [0 0.1], ...
-%     'PositiveOverlapRange', [0.5 1], ...
-%     'NumStrongestRegions', Inf);
+frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options2);
 
 % frcnn = trainFastRCNNObjectDetector(data, cifar10Net , options, ...
 %     'NegativeOverlapRange', [0 0.1], ...
 %     'PositiveOverlapRange', [0.7 1], ...
 %     'SmallestImageDimension', 600);
-load('frcnn.mat')
+
 
 numImages = height(testData);
 results(numImages) = struct('bbox',[],'scores',[], 'labels', []);
+tic;
 for i=1:size(testData, 1)
     %Detect and store bboxes for all images
     img = imread(testData.fileNames{i});
@@ -51,13 +49,31 @@ for i=1:size(testData, 1)
     results(i).scores = scores;
     results(i).labels = labels;
 end
+classificationTime = toc;
 
 detectorData = struct2table(results); 
 %Evaluate detector
 [ap,recall,precision] = evaluateDetectionPrecision(detectorData,testData(:, 2:end));
 figure
-plot(recall,precision)
-xlabel('recall')
-ylabel('precision')
+% plot(recall,precision)
+% xlabel('recall')
+% ylabel('precision')
 grid on
 title(sprintf('Average Precision = %.1f',ap))
+
+function plotTrainingAccuracy(info)
+
+persistent plotObj
+
+if info.State == "start"
+    figure;
+    plotObj = animatedline;
+    xlabel("Iteration")
+    ylabel("Training Accuracy")
+elseif info.State == "iteration"
+    addpoints(plotObj,info.Iteration,info.TrainingAccuracy)
+    drawnow limitrate nocallbacks
+end
+
+end
+    
