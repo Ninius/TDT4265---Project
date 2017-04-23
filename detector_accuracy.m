@@ -1,4 +1,4 @@
-function ap = detector_accuracy(detector, testData)
+ function ap = detector_accuracy(detector, testData)
 %Inputs: detector [bboxes,scores] = detect(detector, img);
 %testData: Ground truth table with filenames and bounding boxes
 
@@ -8,8 +8,10 @@ tic
 for i=1:size(testData, 1)
     %Detect and store bboxes for all images
     img = imread(testData.fileNames{i});
-    %img = imresize(img, 0.5);
+    %Optional scaling for increased performance/reduced accuracy
+    %img = imresize(img, 0.4);
     [bboxes,scores] = detect(detector, img);
+    %Scale bboxes if optional scaling
     results(i).bbox = bboxes;
     results(i).scores = scores;
 end

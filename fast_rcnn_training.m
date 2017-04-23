@@ -17,40 +17,40 @@ load('alexnet_trained.mat');
 %% Training
 %Training options, reduce MiniBatchSize if GPU out of memory.
 %Approx. values: 120 for cifar10Net, 10 for AlexNet on 8GB VRAM GPU
-options = trainingOptions('sgdm', ...
-    'MiniBatchSize', 128, ...
-    'InitialLearnRate', 0.001, ...
-    'MaxEpochs', 100);
-    
-options2 = trainingOptions('sgdm', ...
-    'MaxEpochs',20, ...
-    'InitialLearnRate',0.0001, ...
-    'MiniBatchSize', 128, ...
-    'OutputFcn', @plotTrainingAccuracy);
-    
-        
-%Train Fast-RCNN detector
-frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options2);
+% options = trainingOptions('sgdm', ...
+%     'MiniBatchSize', 128, ...
+%     'InitialLearnRate', 0.001, ...
+%     'MaxEpochs', 1);
+%     
+% options2 = trainingOptions('sgdm', ...
+%     'MaxEpochs',1, ...
+%     'InitialLearnRate',1, ...
+%     'MiniBatchSize', 128, ...
+%     'OutputFcn', @plotTrainingAccuracy);
+%     
+%         
+% %Train Fast-RCNN detector
+% frcnn = trainFastRCNNObjectDetector(trainingData, trainedAlexNet , options2);
+% 
+% % frcnn = trainFastRCNNObjectDetector(data, cifar10Net , options, ...
+% %     'NegativeOverlapRange', [0 0.1], ...
+% %     'PositiveOverlapRange', [0.7 1], ...
+% %     'SmallestImageDimension', 600);
 
-% frcnn = trainFastRCNNObjectDetector(data, cifar10Net , options, ...
-%     'NegativeOverlapRange', [0 0.1], ...
-%     'PositiveOverlapRange', [0.7 1], ...
-%     'SmallestImageDimension', 600);
 
-
-numImages = height(testData);
-results(numImages) = struct('bbox',[],'scores',[], 'labels', []);
-tic;
-for i=1:size(testData, 1)
-    %Detect and store bboxes for all images
-    img = imread(testData.fileNames{i});
-    [bboxes,scores, labels] = detect(frcnn, img);
-    results(i).bbox = bboxes;
-    results(i).scores = scores;
-    results(i).labels = labels;
-end
+% numImages = height(testData);
+% results(numImages) = struct('bbox',[],'scores',[], 'labels', []);
+% tic;
+% for i=1:size(testData, 1)
+%     %Detect and store bboxes for all images
+%     img = imread(testData.fileNames{i});
+%     [bboxes,scores, labels] = detect(frcnn, img);
+%     results(i).bbox = bboxes;
+%     results(i).scores = scores;
+%     results(i).labels = labels;
+% end
 classificationTime = toc;
-
+fps = length(testData.fileNames)/classificationTime;
 detectorData = struct2table(results); 
 %Evaluate detector
 [ap,recall,precision] = evaluateDetectionPrecision(detectorData,testData(:, 2:end));

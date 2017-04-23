@@ -10,7 +10,7 @@ trainingData = data(1:750, :);
 validationData = data(751:end, :);
 testData = data(601:750, :);
 
-% acfDetector = trainACFObjectDetector(data, 'NumStages', 20);
+acfDetector = trainACFObjectDetector(data, 'NumStages', 40);
 tic;
 ap = detector_accuracy(acfDetector, validationData);
 acfTimer = toc;

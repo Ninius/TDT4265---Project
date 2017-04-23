@@ -25,7 +25,7 @@ options = trainingOptions('sgdm', ...
 options_alex = trainingOptions('sgdm', ...
         'MiniBatchSize', 32, ...
         'InitialLearnRate', 0.0001, ...
-        'MaxEpochs', 20, ...
+        'MaxEpochs', 2, ...
         'Verbose', true);
     
         
@@ -35,4 +35,26 @@ fasterrcnn = trainFasterRCNNObjectDetector(trainingData, trainedAlexNet , option
     'PositiveOverlapRange', [0.5 1], ...
     'NumStrongestRegions', Inf);
 
+numImages = height(testData);
+results(numImages) = struct('bbox',[],'scores',[], 'labels', []);
+tic;
+for i=1:size(testData, 1)
+    %Detect and store bboxes for all images
+    img = imread(testData.fileNames{i});
+    [bboxes,scores, labels] = detect(frcnn, img);
+    results(i).bbox = bboxes;
+    results(i).scores = scores;
+    results(i).labels = labels;
+end
+classificationTime = toc;
+fps = length(testData.fileNames)/classificationTime;
+detectorData = struct2table(results); 
+%Evaluate detector
+[ap,recall,precision] = evaluateDetectionPrecision(detectorData,testData(:, 2:end));
+figure
+plot(recall,precision)
+xlabel('recall')
+ylabel('precision')
+grid on
+title(sprintf('Average Precision = %.1f',ap))
 

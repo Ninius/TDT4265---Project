@@ -50,21 +50,23 @@ optionsTransfer = trainingOptions('sgdm', ...
 
 %% Testing
 %Test alexnet
-load('alexnet_trained.mat')
-tic;
-predictedLabels = classify(trainedAlexNet,testSetAlex);
-classificationTimeAlex = toc
-testLabels = testSetAlex.Labels;
-%Calculate accuracy
-accuracyAlex = sum(predictedLabels == testLabels)/numel(testLabels)
-confMat = confusionmat(testLabels, predictedLabels);
+% load('alexnet_trained.mat')
+% tic;
+% predictedLabels = classify(trainedAlexNet,testSetAlex);
+% classificationTimeAlex = toc
+% testLabels = testSetAlex.Labels;
+% %Calculate accuracy
+% accuracyAlex = sum(predictedLabels == testLabels)/numel(testLabels)
+% confMatAlex = confusionmat(testLabels, predictedLabels);
 %Test Cifar10Net
+load('cifarnet_trained.mat')
 tic;
 predictedLabels = classify(trainedCifar10Net,testSetCifar);
 classificationTimeCifar = toc
 %Calculate accuracy
+testLabels = testSetCifar.Labels;
 accuracyCifar = sum(predictedLabels == testLabels)/numel(testLabels)
-
+confMatCifar = confusionmat(testLabels, predictedLabels);
 
 
 

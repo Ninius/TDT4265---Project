@@ -1,4 +1,7 @@
 %% Init
+%Load detector and classifier
+load('alexnet_trained.mat');
+load('acfDetector.mat')
 %Image-labels path
 clearvars results
 GTTable = 'FullIJCNN2013\gt.txt';
@@ -6,8 +9,9 @@ GTTable = 'FullIJCNN2013\gt.txt';
 data = readGTData(GTTable);
 %Create complete image file paths
 data.fileNames = fullfile(pwd, data.fileNames);
+validationData = data(751:end, :);
 %Split into training, validation and test data
-numImages = height(data);
+numImages = height(validationData);
 %Create result struct
 results(numImages) = struct('Boxes',[],'Scores',[], 'Labels', []);
 %Sign categories
@@ -21,12 +25,17 @@ categories = {'speed_limit_20' 'speed_limit_30' 'speed_limit_50'...
     'keep_right' 'keep_left' 'roundabout' 'restriction_ends_overtaking' 'restriction_ends_overtaking_trucks'};
 
 %% Detection and classification
+scaling = 0.4;
 tic;
 for i=1:numImages
     %Read image
-    img = imread(data.fileNames{i});
+    img = imread(validationData.fileNames{i});
+    %Optional resizing of image
+    imgResized = imresize(img, scaling);
     %Detect and store bboxes
-    [bboxes,scores] = detect(acfDetector, img);
+    [bboxes,scores] = detect(acfDetector, imgResized);
+    %Scale bbox if resizing
+    bboxes = bboxes/scaling;
     %Iterate over all bboxes
     if size(bboxes,1) > 0
         labels = zeros(1,size(bboxes,1));
@@ -49,4 +58,4 @@ end
 timer = toc;
 fps = numImages/timer;
 results = struct2table(results);
-[ap,recall,precision] = evaluateDetectionPrecision(results,data(:, 2:end), 0.3);
+[ap,recall,precision] = evaluateDetectionPrecision(results,validationData(:, 2:end), 0.3);
